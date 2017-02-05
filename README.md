@@ -173,7 +173,86 @@ el nombre de nuestro controlador, y crearemos nuestra plantilla en:
 Ahora que tenemos todas las piezas en su lugar (ruta, controlador, vista y plantilla) ya
 podemos visitar nuestra URL: http://localhost:4000/hello
 
+# Otra página
 
+## La ruta
+
+Añadimos la ruta: `get "/hello/:messenger", HelloController, :show`. De esta forma, un
+mapa con la clave `"messenger"` (una cadena) será pasado a la función `show` del controlador. El valor
+para esa clave dependerá de la URL que visite el usuario: `/hello/Dubi`, `/hello/Einar`,
+darían valores distintos: `Dubi` y `Einar`.
+
+## La acción
+
+La acción invocará a la vista pasándole el parámetro recibido:
+
+    def show(conn, %{"messenger" => msgr}) do
+        render conn, "show.html", messenger: msgr
+    end
+
+Del parámetro `params` de la acción extraemos el `messenger` mediante pattern matching.
+A la vista le estamos pasando una lista de parámetros, donde `:messenger` tendrá el
+valor extraído del mapa de parámetros.
+
+## La plantilla
+
+La plantilla irá definida en `web/templates/hello/show.html.eex`. `hello` por ser el
+nombre del controlador, `show.html.eex` por ser el nombre de la plantilla que el
+controlador quiere renderizar.
+
+# Enrutado
+
+Una documentación algo exhaustiva sobre enrutado en Phoenix se puede encontrar en la
+URL: http://www.phoenixframework.org/docs/routing
+
+La definición de rutas suelen estar en el fichero `web/router.ex`. El router tiene dos
+funcionalidades principales: las `pipelines` y los `scopes`. Los veremos más adelante.
+
+En los `scopes` es donde se definen las rutas, por ejemplo:
+
+    get "/", PageController, :index
+
+`get` es una macro que se expande por una definición de la función `match/3`:
+
+    def match("/", PageController, :index) do
+
+Así, cada ruta que definamos con `get` será una nueva definición de `match/3`, que
+se evalúa como cualquier otra función de Elixir con varias definiciones. Por orden,
+de arriba a abajo, pattern matching para decidir qué definición ejecutar, solo una
+definición se ejecuta,...
+
+Con el comando `mix phoenix.routes` podemos ver una lista de las rutas que
+están definidas.
+
+La macro `resources` crea varias definiciones de `match/3`. De hecho, crea las
+definiciones típicas para gestionar recursos REST. Por ejemplo,
+`resources "/users", UserController` expandería a:
+
+    user_path  GET     /users           HelloPhoenix.UserController :index
+    user_path  GET     /users/:id/edit  HelloPhoenix.UserController :edit
+    user_path  GET     /users/new       HelloPhoenix.UserController :new
+    user_path  GET     /users/:id       HelloPhoenix.UserController :show
+    user_path  POST    /users           HelloPhoenix.UserController :create
+    user_path  PATCH   /users/:id       HelloPhoenix.UserController :update
+               PUT     /users/:id       HelloPhoenix.UserController :update
+    user_path  DELETE  /users/:id       HelloPhoenix.UserController :delete
+
+## Path helpers: http://www.phoenixframework.org/docs/routing#section-path-helpers
+
+Dinámicamente, se añaden ciertas funciones al módulo `HelloPhoenix.Router.Helper`.
+Por ejemplo, si nuestro controlador se llama `page`, tendremos disponibles las
+funciones `page_path` y `page_url`:
+
+    iex> HelloPhoenix.Router.Helpers.page_path(HelloPhoenix.Endpoint, :index)
+    "/" 
+    iex(3)> user_url(Endpoint, :index)
+    "http://localhost:4000/users"
+
+`page_path` nos dice el path para una acción. `page_url` nos dice la URL completa.
+
+Esto puede ser muy útil para construir enlaces en las plantillas. Por ejemplo,
+para enlazar de un controlador a otro, o de una lista a un detalle de un
+elemento.
 
 
 
