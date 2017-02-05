@@ -259,6 +259,49 @@ elemento.
 - Recursos anidados: http://www.phoenixframework.org/docs/routing#section-nested-resources
 - Rutas con su propio scope: http://www.phoenixframework.org/docs/routing#section-scoped-routes
 
+## Pipelines: 
+
+Las pipelines (http://www.phoenixframework.org/docs/routing#section-pipelines)
+son un grupo de *plugs* que se ejecutarán uno detrás de otro y a las que se han
+dado un orden.
+
+Un [plug](http://www.phoenixframework.org/docs/overview#section-plug) es como
+un middleware o algo así, son tareas que se ejecutan para transformar una
+petición del usuario: retornan ficheros estáticos, escriben logs, hacen
+comprobaciones de seguridad,...
+
+# Rutas para canales
+
+Los [canales](http://www.phoenixframework.org/docs/channels) gestionan mensajes
+entrantes y salientes emitidos a través de un socket y que tratan sobre un
+determinado tema. Las
+[rutas para los canales](http://www.phoenixframework.org/docs/routing#section-channel-routes)
+relacionan peticiones por socket y tema, para que sean gestionados por el canal
+adecuado.
+
+Los manejadores de socket se montan sobre el *endpoint*, que se define en
+`lib/hello_phoenix/endpoint.ex`:
+
+    defmodule HelloPhoenix.Endpoint do
+      use Phoenix.Endpoint
+
+      socket "/socket", HelloPhoenix.UserSocket
+      ...
+    end
+
+Cada socket, puede gestionar varios canales. Por ejemplo,
+`web/channels/user_socket.ex` sería parecido a:
+
+    defmodule HelloPhoenix.UserSocket do
+      use Phoenix.Socket
+
+      channel "rooms:*", HelloPhoenix.RoomChannel, via: [Phoenix.Transports.WebSocket]
+      channel "foods:*", HelloPhoenix.FoodChannel
+    end
+
+Cada canal puede usar varios transportes: WebSockets o/y Long-Polling. O se
+puede restringir con `via:`, como antes.
+
 
 
 
