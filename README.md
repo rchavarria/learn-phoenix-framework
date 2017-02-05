@@ -254,6 +254,12 @@ Esto puede ser muy útil para construir enlaces en las plantillas. Por ejemplo,
 para enlazar de un controlador a otro, o de una lista a un detalle de un
 elemento.
 
+## Otros conceptos
+
+- Recursos anidados: http://www.phoenixframework.org/docs/routing#section-nested-resources
+- Rutas con su propio scope: http://www.phoenixframework.org/docs/routing#section-scoped-routes
+
+
 
 
 
