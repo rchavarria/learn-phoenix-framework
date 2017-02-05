@@ -302,6 +302,24 @@ Cada socket, puede gestionar varios canales. Por ejemplo,
 Cada canal puede usar varios transportes: WebSockets o/y Long-Polling. O se
 puede restringir con `via:`, como antes.
 
+# Canales: http://www.phoenixframework.org/docs/channels
+
+## Partes móviles
+
+- Manejadores de sockets: básicamente gestionan la conexión. Suele haber una sola conexión que se multiplexa entre varios canales. Un ejemplo es `web/channels/user_socket.ex`, que se crea al crear un nuevo proyecto Phoenix.
+- Rutas para canales: se definen en los manejadores de sockets. Hacen coincidir tópicos con módulos donde se implementan los canales.
+
+    channel "room:*", HelloPhoenix.RoomChannel
+
+- Canales: gestiona eventos de clientes. Son como Controladores, pero los Canales son bidireccionales y la conexión persiste más allá de una sola petición. Cada Canal implementará alguno de los callbacks `join/3`, `terminate/2`, `handle_in/3` o `handle_out/3`.
+- PubSub: gestionan los mensajes a pasar por los canales. Normalmente, no les prestaremos mucha atención. Los Canales los utilizan por debajo para el paso de mensajes.
+- Mensajes: son definidos en un struct con las siguientes claves: `topic`, `event`, `payload` y `ref`.
+- Tópicos: son identificadores en forma de cadena
+- Transportes
+- Adaptadores de transportes
+- Librerías de clientes: Phoenix viene con una libraría para JavaScript, pero hay clientes para Android, iOS,...
+
+
 
 
 
