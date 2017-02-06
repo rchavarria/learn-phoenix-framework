@@ -319,6 +319,149 @@ puede restringir con `via:`, como antes.
 - Adaptadores de transportes
 - Librerías de clientes: Phoenix viene con una libraría para JavaScript, pero hay clientes para Android, iOS,...
 
+## Creando una aplicación de chat
+
+La configuración comienza en el endpoint. Al crear una aplicación Phoenix, el endpoint lo podemos encontrar en `lib/hello_phoenix/endpoint.ex`. Buscamos una línea donde se defina cómo se va a manejar un socket:
+
+```
+defmodule HelloPhoenix.Endpoint do
+  use Phoenix.Endpoint, otp_app: :hello_phoenix
+
+  socket "/socket", HelloPhoenix.UserSocket
+  # ...
+end
+```
+
+El siguiente paso es localizar el módulo `HelloPhoenix.UserSocket`, en `web/channels/user_socket`, donde deberemos descomentar la línea que configura el identificador para el canal `room:*`:
+
+
+```
+defmodule HelloPhoenix.UserSocket do
+  use Phoenix.Socket
+
+  ## Channels
+  channel "room:*", HelloPhoenix.RoomChannel
+  #...
+```
+
+Cualquier cliente que mande un mensaje con `romm:<lo que sea>` como tópico, será manejado por `RoomChannel`.
+
+### Uniéndose (autorizando) a un canal
+
+Para aceptar o denegar conexiones a un canal, debemos implementar `join/3` en `RoomChannel`:
+
+
+```
+defmodule HelloPhoenix.RoomChannel do
+  use Phoenix.Channel
+
+  def join("room:lobby", _message, socket) do
+    {:ok, socket}
+  end
+  def join("room:" <> _private_room_id, _params, _socket) do
+    {:error, %{reason: "unauthorized"}}
+  end
+end
+```
+
+Estamos aceptando mensajes dirigidos a `room:lobby` mientras que estamos rechazando mensajes a cualquier otra *habitación*.
+
+### Un cliente JavaScript
+
+Si usamos [Brunch](http://www.phoenixframework.org/docs/static-assets) (se usa por defecto), tendremos un cliente básico de WebSockets usando la implementación que viene en Phoenix. Podemos consultar el código JavaScript en `web/static/js/socket.js`.
+
+```
+//...
+socket.connect()
+
+// Now that you are connected, you can join channels with a topic:
+let channel = socket.channel("room:lobby", {})
+channel.join()
+  .receive("ok", resp => { console.log("Joined successfully", resp) })
+  .receive("error", resp => { console.log("Unable to join", resp) })
+
+export default socket
+```
+
+Tenemos que asegurarnos que ese fichero se importa en nuestra aplicación. Para ello, descomentar la línea que hace refrencia al fichero en `web/static/js/app.js`.
+
+En este punto, si visitamos http://localhost:4000, deberíamos ver un mensaje de éxito por la consola del navegador. Deberíamos haber sido capaces de conectarnos al WebSocket.
+
+Ahora, en `web/templates/page/index.html.eex` añadiremos un bloque donde mostrar los mensajes recibidos y una caja de texto donde escribirlos.
+
+```
+<div id="messages"></div>
+<input id="chat-input" type="text"></input>
+```
+
+Ahora, añadamos algún listener de eventos en `web/static/js/socket.js` para poder enviar mensajes.
+
+```
+//...
+let channel           = socket.channel("room:lobby", {})
+let chatInput         = document.querySelector("#chat-input")
+let messagesContainer = document.querySelector("#messages")
+
+chatInput.addEventListener("keypress", event => {
+  if(event.keyCode === 13){
+    channel.push("new_msg", {body: chatInput.value})
+    chatInput.value = ""
+  }
+})
+
+channel.join()
+  .receive("ok", resp => { console.log("Joined successfully", resp) })
+  .receive("error", resp => { console.log("Unable to join", resp) })
+
+export default socket
+```
+
+El código anterior escucha eventos `keypress`, y cuando pulsamos `Enter` envía un mensaje por el canal, con `channel.push`. El nombre del evento, del mensaje que enviamos es `new_msg`, y debemos enviar un objeto con un `body`.
+
+Ahora, escucharemos mensajes y los escribiremos en el bloque adecuado:
+
+```
+channel.on("new_msg", payload => {
+  let messageItem = document.createElement("li");
+  messageItem.innerText = `[${Date()}] ${payload.body}`
+  messagesContainer.appendChild(messageItem)
+})
+```
+
+### Mensajes entrantes en el servidor
+
+Los mensajes entrantes se manejan en `handle_in/3`, de `RoomChannel`. Podemos hacer pattern matching de los nombres de los eventos, en nuestro caso `new_msg`. En nuestro caso, notificaremos a todos los clientes conectados a `room:lobby` mediante `broadcast!/3`.
+
+```
+def handle_in("new_msg", %{"body" => body}, socket) do
+  broadcast! socket, "new_msg", %{body: body}
+  {:noreply, socket}
+end
+```
+
+`broadcast!/3` notifica a todos los clientes del canal llamando a `handle_out/3` de cada uno de ellos. De esta forma podemos controlar qué y cómo salen los mensajes a cada cliente. `handle_out/3` envía los mensajes a los clientes haciendo `push` al socket con el mensaje en particular.
+
+
+```
+def handle_out("new_msg", payload, socket) do
+  push socket, "new_msg", payload
+  {:noreply, socket}
+end
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
